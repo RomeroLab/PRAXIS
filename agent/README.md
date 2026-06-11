@@ -87,7 +87,6 @@ are bundled in the repository, so the benchmarks run without any external downlo
 | `precompute_embeddings.py` | ESM/MSA/Tranception embeddings → HDF5 (chunked) |
 | `precompute_zero_shot.py` | Tranception zero-shot fitness predictions |
 | `insilico_analysis/` | In-silico benchmark suite (see above) |
-| `data_analysis/` | Plots/CSVs read directly from the result SQLite DB |
 
 ### Configuration
 
