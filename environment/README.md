@@ -54,7 +54,7 @@ system continue operating despite occasional assembly failures or assay-quality 
 | File | Role |
 |------|------|
 | `lab_controller.py` | Orchestrator, state machine, inventory tracking |
-| `process_plate_data.py` | Parses plate-reader CSV; statistical normalization + Mann-Whitney analysis → `phenotype.json` |
+| `process_plate_data.py` | Parses the plate-reader time-course; estimates initial reaction rates by linear (and piecewise-linear) regression of fluorescence vs. time, applies fluorescein normalization, and aggregates the substrate replicates → `phenotype.json` |
 | `seq_to_pipetting_steps.py` | Maps designed sequences to the fragment library; emits 6 robot worklist CSVs |
 | `generate_assay_plate.py` | Assigns sequences to 96-well plate positions |
 | `update_valid_assemblies.py` | Removes assemblies failing the Evagreen dsDNA check |
