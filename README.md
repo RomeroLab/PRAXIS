@@ -1,63 +1,82 @@
 # PRAXIS
 
-**PRAXIS** is a self-driving platform for protein engineering: a machine-learning **agent**
-proposes enzyme variants and a robotic **environment** synthesizes and assays them, closing
-the design–test loop without a human in the inner cycle.
+### Engineering protein function through autonomous experimental interaction
 
-This repository accompanies the paper *"<TODO: paper title>"* and contains both halves of the
-loop plus an in-silico benchmark suite for reproducing the computational results.
+PRAXIS is a closed-loop learning system that acquires knowledge through **autonomous
+experimental interaction** — iteratively perturbing a biological system, measuring its
+response, and learning from the resulting feedback. It couples a **generative protein
+language model** for sequence design with a **fully autonomous robotic laboratory** for
+gene assembly, protein expression, and biochemical characterization, in a continuous
+experimental loop.
+
+At each iteration the model proposes protein variants, the laboratory constructs and
+characterizes them, and the resulting measurements are fed back into the model to guide the
+next round of design. Applied to Family 1 glycoside hydrolase (GH1) enzymes, the system runs
+as a coordinated **multi-agent** platform in which three agents independently optimize activity
+toward glucose, xylose, and mannose while sharing experimental knowledge through a common
+learning model — discovering enzyme variants with greater than fivefold shifts in substrate
+specificity toward non-native sugars across fully autonomous multi-week campaigns.
+
+This repository accompanies:
+
+> **Engineering protein function through autonomous experimental interaction**
+> Coban Brooks, Pascal Notin, Philip A. Romero
 
 ```
-            ┌─────────────────────────────┐
-            │   agent/   (this is the ML)  │
-            │  ProteinNPT surrogate + BO   │
-            │  proposes next variants      │
-            └───────────────┬─────────────┘
-            sequence queries │   ▲ phenotypes
-                             ▼   │
-            ┌─────────────────────────────┐
-            │ environment/  (the wet lab)  │
-            │  assembly → TXTL → assay →   │
-            │  plate processing            │
-            └─────────────────────────────┘
+            ┌──────────────────────────────────────┐
+            │  agent/   — generative protein         │
+            │  language model (ProteinNPT)           │
+            │  proposes informative variants         │
+            └───────────────────┬──────────────────┘
+              sequence designs   │   ▲  measurements
+                                 ▼   │
+            ┌──────────────────────────────────────┐
+            │  environment/  — autonomous robotic    │
+            │  laboratory: assembly → expression →   │
+            │  enzyme assay → data processing        │
+            └──────────────────────────────────────┘
 ```
 
 ## Repository layout
 
-| Path | What it is |
-|------|------------|
-| [`agent/`](agent) | The ML/Bayesian-optimization agent (ProteinNPT surrogate, conditional sampling, UCB acquisition, lab I/O). |
-| [`agent/insilico_analysis/`](agent/insilico_analysis) | In-silico benchmark suite (GFP/GB1/PAB1/UBE4 vs. published DMS oracles). |
-| [`environment/`](environment) | The lab-automation system that runs the physical assays and returns phenotypes. |
+| Path | Role in the loop |
+|------|------------------|
+| [`agent/`](agent) | The **generative agent**: a ProteinNPT-based protein language model that learns sequence–function relationships from accumulated measurements and proposes new variants via uncertainty-guided (UCB) acquisition. |
+| [`agent/insilico_analysis/`](agent/insilico_analysis) | **In-silico benchmarks**: deep mutational scanning datasets (Pab1, GB1, Ube4b, avGFP) used as ground-truth oracles to validate the agent's search before coupling it to the laboratory. |
+| [`environment/`](environment) | The **experimental environment**: software that operates the autonomous robotic laboratory — constructing and characterizing designed variants and returning measurements to the agent. |
 
-The two halves run independently and communicate over HTTP/SSH, so you can run the agent and
-benchmarks without any lab hardware.
+The agent and environment run independently and communicate over HTTP/SSH, so the agent and
+benchmarks can be run with no laboratory hardware.
 
 ## Quickstart
 
-### 1. In-silico benchmarks (no lab required)
+### 1. In-silico benchmarks (no laboratory required)
+
+Validate the agent's ability to select informative experiments against deep mutational scanning
+datasets used as ground-truth oracles:
 
 ```bash
 cd agent
 conda env create -f self_driving_env.yml && conda activate self_driving_env
-bash setup.sh                                       # download ESM2 + Tranception weights (DMS datasets are bundled in the repo)
-bash insilico_analysis/run_full_benchmark.sh 0      # 4 proteins × 5 methods × 5 seeds
+bash setup.sh                                       # download ESM2 + Tranception weights (DMS datasets are bundled)
+bash insilico_analysis/run_full_benchmark.sh 0      # 4 datasets × 5 search strategies × 5 seeds
 ```
 
-Each benchmark seeds with 10 random dataset sequences and uses the protein's DMS landscape as a
-ground-truth oracle. See [`agent/README.md`](agent/README.md#in-silico-benchmarks).
+Each search is initialized with 10 random sequences and run over 20 rounds of 10 acquisitions,
+comparing ProteinNPT + UCB against simpler baselines. See
+[`agent/README.md`](agent/README.md#in-silico-benchmarks).
 
 ### 2. The agent (closed-loop design)
 
 ```bash
 cd agent
-bash self_driving_single.sh        # one acquisition strategy
-bash self_driving_multiple.sh      # three specificity agents in parallel
+bash self_driving_single.sh        # a single agent / objective
+bash self_driving_multiple.sh      # the multi-agent campaign (glucose / xylose / mannose)
 ```
 
 See [`agent/README.md`](agent/README.md).
 
-### 3. The environment (lab automation)
+### 3. The environment (autonomous laboratory)
 
 ```bash
 cd environment
@@ -71,11 +90,11 @@ See [`environment/README.md`](environment/README.md).
 
 ## Data & weights
 
-The benchmark DMS oracle datasets (`agent/insilico_analysis/dataset_oracle/<protein>/<protein>_SeqFxnDataset.pkl`,
-~80 MB for GFP/GB1/PAB1/UBE4) are **bundled in the repository**, so the benchmarks are
+The benchmark oracle datasets (`agent/insilico_analysis/dataset_oracle/<protein>/<protein>_SeqFxnDataset.pkl`,
+~80 MB for Pab1/GB1/Ube4b/avGFP) are **bundled in the repository**, so the benchmarks are
 self-contained. Model weights (ESM2-650M, Tranception Large) are downloaded by `agent/setup.sh`.
 Precomputed embeddings and closed-loop result databases are regenerated by the agent's
-`precompute_*` scripts and BO runs.
+`precompute_*` scripts and optimization runs.
 
 ## Dependencies
 
@@ -85,13 +104,10 @@ downloaded by `agent/setup.sh`.
 
 ## Citation
 
-If you use PRAXIS, please cite:
-
 ```bibtex
-@article{praxis<TODO>,
-  title   = {<TODO: paper title>},
-  author  = {<TODO: author list>},
-  journal = {<TODO>},
+@article{brooks_autonomous_interaction,
+  title   = {Engineering protein function through autonomous experimental interaction},
+  author  = {Brooks, Coban and Notin, Pascal and Romero, Philip A.},
   year    = {2026}
 }
 ```

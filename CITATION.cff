@@ -1,17 +1,24 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
-title: "PRAXIS: a self-driving platform for protein engineering"
-# TODO: confirm author list and ORCIDs before publishing
+message: "If you use this software, please cite the associated paper."
+title: "PRAXIS: Engineering protein function through autonomous experimental interaction"
 authors:
   - family-names: Brooks
     given-names: Coban
+  - family-names: Notin
+    given-names: Pascal
+  - family-names: Romero
+    given-names: Philip A.
 license: MIT
-repository-code: "https://github.com/<ORG>/PRAXIS"
-# TODO: add the paper DOI and the data-archive (Zenodo) DOI once minted
+repository-code: "https://github.com/RomeroLab/PRAXIS"
+# TODO: add the paper DOI once available
 preferred-citation:
   type: article
-  title: "<TODO: paper title>"
+  title: "Engineering protein function through autonomous experimental interaction"
   authors:
     - family-names: Brooks
       given-names: Coban
+    - family-names: Notin
+      given-names: Pascal
+    - family-names: Romero
+      given-names: Philip A.
   year: 2026
