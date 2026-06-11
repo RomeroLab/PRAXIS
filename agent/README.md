@@ -79,10 +79,6 @@ functions, and degrees of landscape epistasis — **Pab1, GB1, Ube4b, and avGFP*
 | `onehot_mlp_greedy` | one-hot MLP + greedy |
 | `random` | random sampling |
 
-ProteinNPT + UCB is strongest on the most epistatically rugged landscapes (Pab1, GB1), where
-greedy ascent is trapped by misleading local gradients; the advantage narrows on Ube4b and avGFP,
-where high-fitness variants are reachable through more direct ascent.
-
 ```bash
 # All datasets × strategies × seeds on GPU 0 (completed runs auto-skip)
 bash insilico_analysis/run_full_benchmark.sh 0
