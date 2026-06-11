@@ -31,12 +31,7 @@ from proteinnpt.utils.tranception.model_pytorch import get_tranception_tokenizer
 from proteinnpt.utils.model_utils import Trainer
 from proteinnpt.utils.data_utils import standardize
 
-# Import and setup debug wrapper
-import debug_utils
-
-# Enable detailed debug mode
 import utils
-#utils.score_mutated_sequences = debug_utils.debug_score_mutated_sequences
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
