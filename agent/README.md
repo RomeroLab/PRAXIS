@@ -73,7 +73,8 @@ python insilico_analysis/plot_paper_figures.py
 ```
 
 The DMS oracle datasets (`insilico_analysis/dataset_oracle/<protein>/<protein>_SeqFxnDataset.pkl`)
-are restored by [`../data/download_data.sh`](../data).
+are bundled in the repository, so the benchmarks run without any external download. Model weights
+(ESM2-650M, Tranception Large) come from `setup.sh`.
 
 ## Architecture
 
