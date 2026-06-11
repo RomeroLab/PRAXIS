@@ -1,4 +1,4 @@
-# PRAXIS
+# PRAXIS — PRotein Autonomous eXperimental Interaction System
 
 ### Engineering protein function through autonomous experimental interaction
 
