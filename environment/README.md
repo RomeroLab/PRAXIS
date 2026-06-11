@@ -46,7 +46,7 @@ system continue operating despite occasional assembly failures or assay-quality 
 
 ### File-watcher pipeline
 1. **SequenceHandler** — `data/sequence_query.txt` (designs from the agent) → `seq_to_pipetting_steps.py` + `generate_assay_plate.py` produce robot worklists and the plate layout.
-2. **EvagreenHandler** — `data/raw_evagreen_data/…csv` → `update_valid_assemblies.py` filters assemblies failing the qPCR quality check.
+2. **EvagreenHandler** — `data/raw_evagreen_data/…csv` → `update_valid_assemblies.py` filters assemblies failing the EvaGreen dsDNA quantitation check.
 3. **PlateDataHandler** — `data/raw_plate_data/…csv` → `process_plate_data.py`, archives raw data, updates tracking, and SFTP-transfers the processed measurements (`phenotype.json`) back to the agent.
 
 ### Key modules

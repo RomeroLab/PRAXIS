@@ -40,7 +40,7 @@ with open(EVAGREEN_PATH, 'r', encoding='latin-1') as f:
         except ValueError:
             evagreen_data[well] = 0.0
 
-# Get values from A12–F12 (one evagreen qPCR well per sequence)
+# Get values from A12–F12 (one EvaGreen dsDNA well per sequence)
 values = {
     'A12': evagreen_data.get('A12', 0),
     'B12': evagreen_data.get('B12', 0),
