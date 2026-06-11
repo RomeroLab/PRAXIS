@@ -2,32 +2,27 @@
 """
 Epistasis analysis for in-silico benchmark datasets (GFP, GB1, PAB1, UBE4).
 
-Quantifies local (pairwise) and global epistasis across ALL mutation orders:
-  - The full landscape
-  - The top 5% fitness peak region
+Prints (to stdout; no files written) a characterization of local and global
+epistasis across all mutation orders, for the full landscape and the top
+fitness-peak regions.
 
-Key analyses:
-  1. Additive R² and global epistasis R² (full landscape + top 5%)
-  2. Additive-model residuals stratified by mutation count (all orders)
-  3. R² stratified by mutation count
-  4. Pairwise epistasis classification (sign / reciprocal sign) for doubles
+Analyses:
+  1. Additive R² and global-epistasis R² (full landscape + top 5% / 1%)
+  2. Additive- and global-model residuals / R² stratified by mutation count
+  3. Face epistasis: magnitude / sign / reciprocal-sign classification over every
+     measured 2D square of the genotype hypercube, at all mutation orders, using a
+     local reference background (WT-anchored doubles are the special case R = WT),
+     reported overall, by reference order |R|, and by fitness region.
 
-Outputs:
-  - insilico_analysis/figures/epistasis_summary.png       (scatter + global epistasis)
-  - insilico_analysis/figures/epistasis_by_order.png      (residuals & R² by mutation count)
-  - insilico_analysis/figures/epistasis_pairwise.png      (pairwise ε distributions)
-  - insilico_analysis/figures/epistasis_table.csv         (all metrics)
-  - insilico_analysis/figures/epistasis_by_order_table.csv (per-order breakdown)
+Run:
+  python insilico_analysis/epistasis_analysis.py
 """
 
-import os, warnings
+import os, warnings, itertools
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.isotonic import IsotonicRegression
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 warnings.filterwarnings("ignore")
 
@@ -36,18 +31,22 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATASETS = {
     "GFP": {
         "path": os.path.join(ROOT, "insilico_analysis/dataset_oracle/gfp/gfp_SeqFxnDataset.pkl"),
+        "wt_fitness": 3.7,
         "wt": "MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTLSYGVQCFSRYPDHMKQHDFFKSAMPEGYVQERTIFFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYIMADKQKNGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK",
     },
     "GB1": {
         "path": os.path.join(ROOT, "insilico_analysis/dataset_oracle/gb1/gb1_SeqFxnDataset.pkl"),
+        "wt_fitness": 0.0,
         "wt": "MQYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE",
     },
     "PAB1": {
         "path": os.path.join(ROOT, "insilico_analysis/dataset_oracle/pab1/pab1_SeqFxnDataset.pkl"),
+        "wt_fitness": 0.0,  # log-enrichment scale; Melamed et al. normalize WT enrichment to 1.0 => log(1)=0
         "wt": "GNIFIKNLHPDIDNKALYDTFSVFGDILSSKIATDENGKSKGFGFVHFEEEGAAKEAIDALNGMLLNGQEIYVAP",
     },
     "UBE4": {
         "path": os.path.join(ROOT, "insilico_analysis/dataset_oracle/ube4/ube4_SeqFxnDataset.pkl"),
+        "wt_fitness": 0.084,  # log2-enrichment scale; Starita et al. report WT enrichment E=1.06 => log2(1.06)≈0.084
         "wt": "IEKFKLLAEKVEEIVAKNARAEIDYSDAPDEFRDPLMDTLMTDPVRLPSGTVMDRSIILRHLLNSPTDPFNRQMLTESMLEPVPELKEQIQAWMREKQSSDH",
     },
 }
@@ -109,51 +108,53 @@ def fit_global_epistasis(X, y):
     return latent, y_pred, r2_score(y, y_pred), lin, iso
 
 
-def pairwise_epistasis(df, f_wt):
-    """Compute ε = f(AB) - f(A) - f(B) + f(WT) for all doubles with both singles."""
-    singles = df[df["num_mutations"] == 1]
-    single_map = {}
-    for _, row in singles.iterrows():
-        ms = parse_mutations(row["mutations"])
-        if len(ms) == 1:
-            single_map[ms[0]] = row["functional_score"]
+def face_epistasis(df, wt_fitness, eps_tol=1e-8):
+    """Epistasis over every measured 2D face (square) of the genotype hypercube.
 
-    doubles = df[df["num_mutations"] == 2]
+    For a reference background R and two mutations a, b, the four corners
+    R, R+a, R+b, R+a+b form a square. When all four are measured we compute
+        epsilon = f(R+a+b) - f(R+a) - f(R+b) + f(R)
+    and classify it relative to the local reference R:
+        sign_a flips  <=>  sign(f(R+a) - f(R)) != sign(f(R+a+b) - f(R+b))   (and likewise b)
+        reciprocal_sign : both a and b flip      sign : exactly one flips
+        magnitude       : neither flips, |eps| > tol
+    WT-anchored doubles are the special case R = WT (empty background). Each square
+    is enumerated exactly once (its top corner R+a+b and the pair {a, b}).
+    Returns a DataFrame with columns: ref_order (|R|), epsilon, type, f_top, f_ref.
+    """
+    fit = {}
+    for mut, score in zip(df["mutations"], df["functional_score"]):
+        fit[frozenset(parse_mutations(mut))] = score
+    # Datasets often omit an explicit WT row; use the configured WT fitness as the
+    # baseline so WT-anchored squares (the classic doubles) are included.
+    fit.setdefault(frozenset(), wt_fitness)
+
     records = []
-    for _, row in doubles.iterrows():
-        ms = parse_mutations(row["mutations"])
-        if len(ms) != 2:
+    for M, f_M in fit.items():
+        if len(M) < 2:
             continue
-        m1, m2 = ms
-        if m1 not in single_map or m2 not in single_map:
-            continue
+        for a, b in itertools.combinations(sorted(M), 2):
+            R, Ra, Rb = M - {a, b}, M - {b}, M - {a}
+            if R not in fit or Ra not in fit or Rb not in fit:
+                continue
+            f_R, f_Ra, f_Rb = fit[R], fit[Ra], fit[Rb]
+            eps = f_M - f_Ra - f_Rb + f_R
 
-        f_ab = row["functional_score"]
-        f_a, f_b = single_map[m1], single_map[m2]
-        eps = f_ab - f_a - f_b + f_wt
+            da_alone, da_in_b = f_Ra - f_R, f_M - f_Rb   # effect of a on R vs on R+b
+            db_alone, db_in_a = f_Rb - f_R, f_M - f_Ra   # effect of b on R vs on R+a
+            sign_a = (np.sign(da_alone) != np.sign(da_in_b)) if (da_alone != 0 and da_in_b != 0) else False
+            sign_b = (np.sign(db_alone) != np.sign(db_in_a)) if (db_alone != 0 and db_in_a != 0) else False
 
-        da_alone = f_a - f_wt
-        db_alone = f_b - f_wt
-        da_in_b = f_ab - f_b
-        db_in_a = f_ab - f_a
+            if sign_a and sign_b:
+                etype = "reciprocal_sign"
+            elif sign_a or sign_b:
+                etype = "sign"
+            elif abs(eps) > eps_tol:
+                etype = "magnitude"
+            else:
+                etype = "none"
 
-        sign_a = (np.sign(da_alone) != np.sign(da_in_b)) if (da_alone != 0 and da_in_b != 0) else False
-        sign_b = (np.sign(db_alone) != np.sign(db_in_a)) if (db_alone != 0 and db_in_a != 0) else False
-
-        if sign_a and sign_b:
-            etype = "reciprocal_sign"
-        elif sign_a or sign_b:
-            etype = "sign"
-        elif abs(eps) > 1e-8:
-            etype = "magnitude"
-        else:
-            etype = "none"
-
-        records.append(dict(
-            mut1=m1, mut2=m2,
-            f_ab=f_ab, f_a=f_a, f_b=f_b, f_wt=f_wt,
-            epsilon=eps, type=etype,
-        ))
+            records.append(dict(ref_order=len(R), epsilon=eps, type=etype, f_top=f_M, f_ref=f_R))
     return pd.DataFrame(records)
 
 
@@ -164,40 +165,49 @@ def epistasis_type_fractions(eps_df):
     return {t: (eps_df["type"] == t).sum() / n for t in ["magnitude", "sign", "reciprocal_sign"]}
 
 
-# ---------------------------------------------------------------------------
-# Per-order analysis: residuals and R² stratified by mutation count
-# ---------------------------------------------------------------------------
+def face_fractions_by_ref_order(eps_df):
+    """Class fractions and counts stratified by reference order |R| (variant order = |R| + 2)."""
+    if len(eps_df) == 0:
+        return pd.DataFrame()
+    rows = []
+    for ro, g in eps_df.groupby("ref_order"):
+        n = len(g)
+        rows.append(dict(
+            ref_order=int(ro), variant_order=int(ro) + 2, n=n,
+            frac_magnitude=(g["type"] == "magnitude").sum() / n,
+            frac_sign=(g["type"] == "sign").sum() / n,
+            frac_reciprocal_sign=(g["type"] == "reciprocal_sign").sum() / n,
+            mean_abs_eps=g["epsilon"].abs().mean(),
+        ))
+    return pd.DataFrame(rows).sort_values("ref_order").reset_index(drop=True)
+
 
 def per_order_stats(num_muts, y, y_pred_add, y_pred_global, label="full"):
     """Compute residual stats and R² per mutation order."""
     resid_add = y - y_pred_add
     resid_global = y - y_pred_global
-    orders = sorted(np.unique(num_muts))
-
     rows = []
-    for k in orders:
+    for k in sorted(np.unique(num_muts)):
         mask = num_muts == k
         n_k = mask.sum()
         if n_k < 2:
             continue
-        y_k = y[mask]
-        ra_k = resid_add[mask]
-        rg_k = resid_global[mask]
+        ra_k, rg_k = resid_add[mask], resid_global[mask]
         rows.append(dict(
-            subset=label,
-            num_mutations=k,
-            n=n_k,
-            # Additive residuals
-            add_mae=np.abs(ra_k).mean(),
-            add_rmse=np.sqrt(np.mean(ra_k ** 2)),
-            add_mean_resid=ra_k.mean(),
-            add_r2=r2_score(y_k, y_pred_add[mask]),
-            # Global epistasis residuals
-            global_mae=np.abs(rg_k).mean(),
-            global_rmse=np.sqrt(np.mean(rg_k ** 2)),
-            global_r2=r2_score(y_k, y_pred_global[mask]),
+            subset=label, num_mutations=k, n=n_k,
+            add_rmse=np.sqrt(np.mean(ra_k ** 2)), add_r2=r2_score(y[mask], y_pred_add[mask]),
+            global_rmse=np.sqrt(np.mean(rg_k ** 2)), global_r2=r2_score(y[mask], y_pred_global[mask]),
         ))
     return pd.DataFrame(rows)
+
+
+def _print_face_fractions(label, eps_df):
+    if len(eps_df) == 0:
+        print(f"  {label} (n=0): no complete squares")
+        return
+    f = epistasis_type_fractions(eps_df)
+    print(f"  {label} (n={len(eps_df):,}):  mean|ε|={eps_df['epsilon'].abs().mean():.4f}   "
+          f"magnitude {f['magnitude']:.1%}   sign {f['sign']:.1%}   reciprocal_sign {f['reciprocal_sign']:.1%}")
 
 
 # ---------------------------------------------------------------------------
@@ -205,309 +215,87 @@ def per_order_stats(num_muts, y, y_pred_add, y_pred_global, label="full"):
 # ---------------------------------------------------------------------------
 
 def analyze(name, cfg):
-    print(f"\n{'=' * 60}\n  {name}\n{'=' * 60}")
+    print(f"\n{'=' * 64}\n  {name}\n{'=' * 64}")
     df = pd.read_pickle(cfg["path"])
     y = df["functional_score"].values
     num_muts = df["num_mutations"].values
-    X, all_muts, mut_to_idx = build_mutation_matrix(df)
+    X, all_muts, _ = build_mutation_matrix(df)
     print(f"Variants: {len(df):,}   Unique mutations: {len(all_muts):,}")
     print(f"Mutation orders: {dict(sorted(zip(*np.unique(num_muts, return_counts=True))))}")
 
-    # ── Full landscape ────────────────────────────────────────────
+    # ── Full landscape: additive & global epistasis ──────────────
     add_model, y_add, r2_add = fit_additive(X, y)
-    latent, y_global, r2_global, lin_model, iso_model = fit_global_epistasis(X, y)
+    _, y_global, r2_global, lin_model, iso_model = fit_global_epistasis(X, y)
     f_wt = add_model.intercept_
-    print(f"Estimated WT fitness (intercept): {f_wt:.4f}")
+    print(f"\nConfigured WT fitness: {cfg['wt_fitness']:.4f}   (additive-model intercept estimate: {f_wt:.4f})")
     print(f"Additive R²:          {r2_add:.4f}")
     print(f"Global epistasis R²:  {r2_global:.4f}  (gain {r2_global - r2_add:+.4f})")
 
-    # Per-order breakdown (full)
     order_full = per_order_stats(num_muts, y, y_add, y_global, label="full")
-    print(f"\nPer-order breakdown (full landscape):")
+    print("\nPer-order breakdown (full landscape):")
     print(order_full[["num_mutations", "n", "add_r2", "add_rmse", "global_r2", "global_rmse"]].to_string(index=False))
 
-    # Pairwise epistasis
-    eps_df = pairwise_epistasis(df, f_wt)
-    pw = {}
-    if len(eps_df) > 0:
-        pw["n"] = len(eps_df)
-        pw["mean_abs"] = eps_df["epsilon"].abs().mean()
-        pw["median_abs"] = eps_df["epsilon"].abs().median()
-        pw["std"] = eps_df["epsilon"].std()
-        pw.update(epistasis_type_fractions(eps_df))
-        print(f"\nPairwise ε  (n={pw['n']:,}):")
-        print(f"  mean|ε|={pw['mean_abs']:.4f}  median|ε|={pw['median_abs']:.4f}  std={pw['std']:.4f}")
-        print(f"  magnitude {pw['magnitude']:.1%}   sign {pw['sign']:.1%}   reciprocal_sign {pw['reciprocal_sign']:.1%}")
+    # ── Face epistasis over all measured squares ─────────────────
+    eps_df = face_epistasis(df, cfg["wt_fitness"])
+    fr = epistasis_type_fractions(eps_df)
+    print(f"\nFace epistasis — all measured squares (local reference):")
+    _print_face_fractions("overall", eps_df)
+    by_ref = face_fractions_by_ref_order(eps_df)
+    if len(by_ref) > 0:
+        print("  by reference order |R|  (variant order = |R| + 2):")
+        print("  " + by_ref.to_string(index=False).replace("\n", "\n  "))
 
-    # ── Top subsets ──────────────────────────────────────────────
-    tops = {}  # keyed by pct
+    # ── Top fitness-peak regions ─────────────────────────────────
+    summary = dict(name=name, n_variants=len(df), n_mutations=len(all_muts),
+                   f_wt=round(float(f_wt), 4), r2_add=round(r2_add, 4),
+                   r2_global=round(r2_global, 4), gain=round(r2_global - r2_add, 4),
+                   face_n=len(eps_df), face_mean_abs=round(eps_df["epsilon"].abs().mean(), 4) if len(eps_df) else None,
+                   face_sign=round(fr["sign"], 4), face_recip=round(fr["reciprocal_sign"], 4))
+
     for pct in TOP_PCTS:
-        pct_label = f"top{int(pct*100)}pct"
+        tag = f"top{int(pct * 100)}"
         threshold = np.percentile(y, 100 * (1 - pct))
         mask = y >= threshold
-        X_top, y_top = X[mask], y[mask]
-        num_muts_top = num_muts[mask]
         print(f"\nTop {pct:.0%}  (n={mask.sum():,}, fitness >= {threshold:.3f})")
 
-        # Evaluate FULL models on top subset
-        r2_add_on_top = r2_score(y_top, add_model.predict(X_top))
-        y_global_on_top = iso_model.predict(lin_model.predict(X_top))
-        r2_global_on_top = r2_score(y_top, y_global_on_top)
-        print(f"  Full additive model on top:  R² = {r2_add_on_top:.4f}")
-        print(f"  Full global model on top:    R² = {r2_global_on_top:.4f}")
+        # full models evaluated on the region
+        r2_add_on = r2_score(y[mask], add_model.predict(X[mask]))
+        r2_glob_on = r2_score(y[mask], iso_model.predict(lin_model.predict(X[mask])))
+        print(f"  Full additive model on region:  R² = {r2_add_on:.4f}")
+        print(f"  Full global   model on region:  R² = {r2_glob_on:.4f}")
 
-        # Refit on top subset
+        # refit on the region
+        X_top, y_top = X[mask], y[mask]
         col_mask = X_top.std(axis=0) > 0
-        X_top_filt = X_top[:, col_mask]
-        if X_top_filt.shape[1] > 0 and len(y_top) > 10:
-            _, y_add_top, r2_add_top = fit_additive(X_top_filt, y_top, regularize=True)
-            _, y_global_top, r2_global_top, _, _ = fit_global_epistasis(X_top_filt, y_top)
-            print(f"  Refit additive R² (Ridge):       {r2_add_top:.4f}")
-            print(f"  Refit global epistasis R²:       {r2_global_top:.4f}  (gain {r2_global_top - r2_add_top:+.4f})")
-
-            order_top = per_order_stats(num_muts_top, y_top, y_add_top, y_global_top, label=pct_label)
-            if len(order_top) > 0:
-                print(f"\n  Per-order breakdown (top {pct:.0%}):")
-                print("  " + order_top[["num_mutations", "n", "add_r2", "add_rmse", "global_r2", "global_rmse"]].to_string(index=False).replace("\n", "\n  "))
+        if col_mask.sum() > 0 and len(y_top) > 10:
+            _, _, r2_add_top = fit_additive(X_top[:, col_mask], y_top, regularize=True)
+            _, _, r2_global_top, _, _ = fit_global_epistasis(X_top[:, col_mask], y_top)
+            print(f"  Refit additive R² (Ridge):      {r2_add_top:.4f}")
+            print(f"  Refit global epistasis R²:      {r2_global_top:.4f}  (gain {r2_global_top - r2_add_top:+.4f})")
         else:
             r2_add_top = r2_global_top = float("nan")
-            order_top = pd.DataFrame()
 
-        # Pairwise ε restricted to this top subset
-        eps_top = eps_df[eps_df["f_ab"] >= threshold] if len(eps_df) > 0 else pd.DataFrame()
-        pw_top = {}
+        # faces whose top corner sits in the region
+        eps_top = eps_df[eps_df["f_top"] >= threshold] if len(eps_df) else eps_df
         if len(eps_top) > 0:
-            pw_top["n"] = len(eps_top)
-            pw_top["mean_abs"] = eps_top["epsilon"].abs().mean()
-            pw_top["median_abs"] = eps_top["epsilon"].abs().median()
-            pw_top["std"] = eps_top["epsilon"].std()
-            pw_top.update(epistasis_type_fractions(eps_top))
-            print(f"  Pairwise ε in top {pct:.0%} (n={pw_top['n']:,}):")
-            print(f"    mean|ε|={pw_top['mean_abs']:.4f}  median|ε|={pw_top['median_abs']:.4f}")
-            print(f"    magnitude {pw_top['magnitude']:.1%}   sign {pw_top['sign']:.1%}   reciprocal_sign {pw_top['reciprocal_sign']:.1%}")
+            print("  Face epistasis in region:")
+            _print_face_fractions("region", eps_top)
+            ft = epistasis_type_fractions(eps_top)
+        else:
+            ft = {"sign": float("nan"), "reciprocal_sign": float("nan")}
 
-        tops[pct] = dict(
-            threshold=threshold,
-            r2_add_on_top=r2_add_on_top,
-            r2_global_on_top=r2_global_on_top,
-            r2_add_top=r2_add_top,
-            r2_global_top=r2_global_top,
-            gain_top=r2_global_top - r2_add_top if not np.isnan(r2_global_top) else float("nan"),
-            pw_top=pw_top, eps_top=eps_top,
-            order_top=order_top,
-        )
+        summary[f"r2_add_{tag}"] = round(r2_add_top, 4) if not np.isnan(r2_add_top) else None
+        summary[f"r2_global_{tag}"] = round(r2_global_top, 4) if not np.isnan(r2_global_top) else None
+        summary[f"face_n_{tag}"] = len(eps_top)
+        summary[f"face_sign_{tag}"] = round(ft["sign"], 4) if not np.isnan(ft["sign"]) else None
+        summary[f"face_recip_{tag}"] = round(ft["reciprocal_sign"], 4) if not np.isnan(ft["reciprocal_sign"]) else None
 
-    return dict(
-        name=name,
-        n_variants=len(df), n_mutations=len(all_muts),
-        r2_add=r2_add, r2_global=r2_global,
-        gain=r2_global - r2_add,
-        f_wt=f_wt,
-        pw=pw, eps_df=eps_df,
-        tops=tops,
-        latent=latent, y=y, y_add=y_add, y_global=y_global,
-        num_muts=num_muts,
-        order_full=order_full,
-    )
+    return summary
 
 
-# ---------------------------------------------------------------------------
-# Plotting
-# ---------------------------------------------------------------------------
-
-def plot_scatter_and_global(results, out_path):
-    """Figure 1: additive-vs-observed scatter & global-epistasis nonlinear mapping."""
-    fig, axes = plt.subplots(2, 4, figsize=(20, 10))
-
-    for j, name in enumerate(results):
-        r = results[name]
-        y = r["y"]
-        latent = r["latent"]
-        y_global = r["y_global"]
-        # Use the smallest top pct for highlighting
-        threshold = r["tops"][min(TOP_PCTS)]["threshold"]
-
-        ax = axes[0, j]
-        top_mask = y >= threshold
-        ax.scatter(latent[~top_mask], y[~top_mask], s=1, alpha=0.15, c="steelblue", rasterized=True)
-        ax.scatter(latent[top_mask], y[top_mask], s=3, alpha=0.4, c="crimson", label=f"top {min(TOP_PCTS):.0%}", rasterized=True)
-        mn, mx = latent.min(), latent.max()
-        ax.plot([mn, mx], [mn, mx], "k--", lw=0.8, label="y=x")
-        ax.set_xlabel("Additive prediction")
-        ax.set_ylabel("Observed fitness")
-        ax.set_title(f"{name}  (add R²={r['r2_add']:.3f})")
-        ax.legend(fontsize=7, loc="upper left")
-
-        ax = axes[1, j]
-        order = np.argsort(latent)
-        ax.scatter(latent, y, s=1, alpha=0.1, c="grey", rasterized=True)
-        ax.plot(latent[order], y_global[order], c="darkorange", lw=2, label="isotonic g(·)")
-        ax.plot([mn, mx], [mn, mx], "k--", lw=0.8)
-        ax.set_xlabel("Latent additive score")
-        ax.set_ylabel("Observed fitness")
-        ax.set_title(f"Global epistasis  (R²={r['r2_global']:.3f})")
-        ax.legend(fontsize=7, loc="upper left")
-
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=200)
-    plt.close(fig)
-    print(f"\nSaved {out_path}")
-
-
-def plot_by_order(results, out_path):
-    """Figure 2: additive RMSE and R² stratified by mutation count."""
-    fig, axes = plt.subplots(2, 4, figsize=(20, 10))
-    colors_full = "steelblue"
-    top_colors = {0.05: "crimson", 0.01: "darkorange"}
-
-    for j, name in enumerate(results):
-        r = results[name]
-        of = r["order_full"]
-
-        # Row 0: RMSE by mutation count
-        ax = axes[0, j]
-        ax.plot(of["num_mutations"], of["add_rmse"], "o-", c=colors_full, label="Additive (full)", ms=5)
-        ax.plot(of["num_mutations"], of["global_rmse"], "s--", c=colors_full, alpha=0.6, label="Global (full)", ms=4)
-        for pct in TOP_PCTS:
-            ot = r["tops"][pct]["order_top"]
-            if len(ot) > 0:
-                c = top_colors.get(pct, "green")
-                ax.plot(ot["num_mutations"], ot["add_rmse"], "o-", c=c, label=f"Additive (top {pct:.0%})", ms=5)
-                ax.plot(ot["num_mutations"], ot["global_rmse"], "s--", c=c, alpha=0.6, label=f"Global (top {pct:.0%})", ms=4)
-        ax.set_xlabel("Number of mutations")
-        ax.set_ylabel("RMSE (residual)")
-        ax.set_title(f"{name} — Prediction error by order")
-        ax.legend(fontsize=5)
-        ax.set_xticks(of["num_mutations"].values)
-
-        # Row 1: R² by mutation count (clipped to [-1, 1] for readability)
-        ax = axes[1, j]
-        ax.plot(of["num_mutations"], of["add_r2"].clip(-1, 1), "o-", c=colors_full, label="Additive (full)", ms=5)
-        ax.plot(of["num_mutations"], of["global_r2"].clip(-1, 1), "s--", c=colors_full, alpha=0.6, label="Global (full)", ms=4)
-        for pct in TOP_PCTS:
-            ot = r["tops"][pct]["order_top"]
-            if len(ot) > 0:
-                c = top_colors.get(pct, "green")
-                ax.plot(ot["num_mutations"], ot["add_r2"].clip(-1, 1), "o-", c=c, label=f"Additive (top {pct:.0%})", ms=5)
-                ax.plot(ot["num_mutations"], ot["global_r2"].clip(-1, 1), "s--", c=c, alpha=0.6, label=f"Global (top {pct:.0%})", ms=4)
-        ax.set_xlabel("Number of mutations")
-        ax.set_ylabel("R² (clipped to [-1, 1])")
-        ax.set_title(f"{name} — R² by order")
-        ax.set_ylim(-1.05, 1.05)
-        ax.axhline(0, color="grey", ls=":", lw=0.5)
-        ax.legend(fontsize=5)
-        ax.set_xticks(of["num_mutations"].values)
-
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=200)
-    plt.close(fig)
-    print(f"Saved {out_path}")
-
-
-def plot_pairwise(results, out_path):
-    """Figure 3: pairwise ε distributions (full landscape + top subsets)."""
-    n_rows = 1 + len(TOP_PCTS)
-    fig, axes = plt.subplots(n_rows, 4, figsize=(20, 4.5 * n_rows))
-
-    for j, name in enumerate(results):
-        r = results[name]
-
-        plot_data = [("Full landscape", r["eps_df"])]
-        for pct in TOP_PCTS:
-            plot_data.append((f"Top {pct:.0%}", r["tops"][pct]["eps_top"]))
-
-        for row, (label, eps_df) in enumerate(plot_data):
-            ax = axes[row, j]
-            if len(eps_df) == 0:
-                ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
-                ax.set_title(f"{name} — {label}")
-                continue
-
-            eps = eps_df["epsilon"].values
-            lo, hi = np.percentile(eps, [1, 99])
-            bins = np.linspace(lo, hi, 60)
-            ax.hist(eps, bins=bins, color="steelblue", edgecolor="white", lw=0.3)
-            ax.axvline(0, color="k", ls="--", lw=0.8)
-            ax.axvline(eps.mean(), color="crimson", ls="-", lw=1.2, label=f"mean={eps.mean():.3f}")
-
-            fracs = epistasis_type_fractions(eps_df)
-            info = (f"n={len(eps_df):,}\n"
-                    f"|ε| mean={np.abs(eps).mean():.3f}\n"
-                    f"sign={fracs['sign']:.1%}\n"
-                    f"recip={fracs['reciprocal_sign']:.1%}")
-            ax.text(0.97, 0.95, info, transform=ax.transAxes,
-                    va="top", ha="right", fontsize=7,
-                    bbox=dict(boxstyle="round", fc="white", alpha=0.8))
-            ax.set_xlabel("ε (epistasis)")
-            ax.set_ylabel("Count")
-            ax.set_title(f"{name} — {label}")
-            ax.legend(fontsize=7)
-
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=200)
-    plt.close(fig)
-    print(f"Saved {out_path}")
-
-
-def save_tables(results, fig_dir):
-    """Save summary CSV and per-order CSV."""
-    # -- Summary table --
-    rows = []
-    for name in results:
-        r = results[name]
-        pw = r["pw"]
-        row = dict(
-            dataset=name,
-            n_variants=r["n_variants"],
-            n_mutations=r["n_mutations"],
-            est_wt_fitness=round(r["f_wt"], 4),
-            r2_additive=round(r["r2_add"], 4),
-            r2_global_epistasis=round(r["r2_global"], 4),
-            nonlinearity_gain=round(r["gain"], 4),
-            pairwise_n=pw.get("n", 0),
-            pairwise_mean_abs_eps=round(pw["mean_abs"], 4) if "mean_abs" in pw else None,
-            pairwise_frac_sign=round(pw.get("sign", float("nan")), 4),
-            pairwise_frac_reciprocal=round(pw.get("reciprocal_sign", float("nan")), 4),
-        )
-        for pct in TOP_PCTS:
-            tag = f"{int(pct*100)}"
-            t = r["tops"][pct]
-            pt = t["pw_top"]
-            row[f"r2_add_refit_top{tag}"] = round(t["r2_add_top"], 4) if not np.isnan(t["r2_add_top"]) else None
-            row[f"r2_global_refit_top{tag}"] = round(t["r2_global_top"], 4) if not np.isnan(t["r2_global_top"]) else None
-            row[f"nonlinearity_gain_top{tag}"] = round(t["gain_top"], 4) if not np.isnan(t["gain_top"]) else None
-            row[f"pairwise_n_top{tag}"] = pt.get("n", 0)
-            row[f"pairwise_mean_abs_eps_top{tag}"] = round(pt["mean_abs"], 4) if "mean_abs" in pt else None
-            row[f"pairwise_frac_sign_top{tag}"] = round(pt.get("sign", float("nan")), 4)
-            row[f"pairwise_frac_reciprocal_top{tag}"] = round(pt.get("reciprocal_sign", float("nan")), 4)
-        rows.append(row)
-    df_summary = pd.DataFrame(rows)
-    p1 = os.path.join(fig_dir, "epistasis_table.csv")
-    df_summary.to_csv(p1, index=False)
-    print(f"\nSaved {p1}")
-    print("\n" + "=" * 80 + "\nSUMMARY TABLE\n" + "=" * 80)
-    print(df_summary.T.to_string())
-
-    # -- Per-order table --
-    order_frames = []
-    for name in results:
-        r = results[name]
-        odf = r["order_full"]
-        if len(odf) > 0:
-            tmp = odf.copy()
-            tmp.insert(0, "dataset", name)
-            order_frames.append(tmp)
-        for pct in TOP_PCTS:
-            ot = r["tops"][pct]["order_top"]
-            if len(ot) > 0:
-                tmp = ot.copy()
-                tmp.insert(0, "dataset", name)
-                order_frames.append(tmp)
-    if order_frames:
-        df_order = pd.concat(order_frames, ignore_index=True)
-        p2 = os.path.join(fig_dir, "epistasis_by_order_table.csv")
-        df_order.to_csv(p2, index=False)
-        print(f"\nSaved {p2}")
+def print_summary(summaries):
+    print("\n" + "=" * 80 + "\nSUMMARY (all datasets)\n" + "=" * 80)
+    print(pd.DataFrame(summaries).set_index("name").T.to_string())
 
 
 # ---------------------------------------------------------------------------
@@ -515,17 +303,8 @@ def save_tables(results, fig_dir):
 # ---------------------------------------------------------------------------
 
 def main():
-    fig_dir = os.path.join(ROOT, "insilico_analysis", "figures")
-    os.makedirs(fig_dir, exist_ok=True)
-
-    results = {}
-    for name, cfg in DATASETS.items():
-        results[name] = analyze(name, cfg)
-
-    plot_scatter_and_global(results, os.path.join(fig_dir, "epistasis_summary.png"))
-    plot_by_order(results, os.path.join(fig_dir, "epistasis_by_order.png"))
-    plot_pairwise(results, os.path.join(fig_dir, "epistasis_pairwise.png"))
-    save_tables(results, fig_dir)
+    summaries = [analyze(name, cfg) for name, cfg in DATASETS.items()]
+    print_summary(summaries)
 
 
 if __name__ == "__main__":
