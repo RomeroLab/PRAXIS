@@ -338,7 +338,10 @@ def run_frontier(
             surrogate.fit(train_seqs, train_fitness)
 
     # Active learning loop
-    labeled_set: Set[str] = set([wt]) | set(s.replace("*", "") for s in init_df['sequence'])
+    # WT is NOT pre-labeled: it is a normal acquirable sequence (present in the frontier graph
+    # and the oracle), so it can be proposed, measured, trained on, and become a parent like any
+    # other variant. It enters labeled_set only once actually acquired (see labeled_set.add below).
+    labeled_set: Set[str] = set(s.replace("*", "") for s in init_df['sequence'])
     # Proposal mode: default to poisson_exact_n_enumerate (dataset-aware neighbor search)
     proposal_mode = getattr(args, 'proposal_mode', None) or 'poisson_exact_n_enumerate'
 

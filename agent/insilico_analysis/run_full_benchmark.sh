@@ -60,8 +60,11 @@ PROTEIN_VALCOL[ube4]="functional_score"
 
 PROTEIN_WT_FITNESS[gfp]="3.7"
 PROTEIN_WT_FITNESS[gb1]="0.0"
-PROTEIN_WT_FITNESS[pab1]="1.0"
-PROTEIN_WT_FITNESS[ube4]="1.06"
+# WT fitness on each dataset's (log-enrichment) functional_score scale:
+# PAB1: Melamed 2013 normalizes WT enrichment to 1.0 => log(1)=0.0
+# UBE4: Starita 2013 score is log2(E) with WT E=1.06 => log2(1.06)=0.084
+PROTEIN_WT_FITNESS[pab1]="0.0"
+PROTEIN_WT_FITNESS[ube4]="0.084"
 
 TOTAL=$((${#SEEDS[@]} * ${#METHODS[@]} * ${#PROTEINS[@]}))
 COUNT=0
