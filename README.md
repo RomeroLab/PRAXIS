@@ -22,20 +22,9 @@ This repository accompanies:
 > **Engineering protein function through autonomous experimental interaction**
 > Coban Brooks, Pascal Notin, Philip A. Romero
 
-```
-            ┌──────────────────────────────────────┐
-            │  agent/   — generative protein         │
-            │  language model (ProteinNPT)           │
-            │  proposes informative variants         │
-            └───────────────────┬──────────────────┘
-              sequence designs   │   ▲  measurements
-                                 ▼   │
-            ┌──────────────────────────────────────┐
-            │  environment/  — autonomous robotic    │
-            │  laboratory: assembly → expression →   │
-            │  enzyme assay → data processing        │
-            └──────────────────────────────────────┘
-```
+<p align="center">
+  <img src="docs/figures/overview.png" alt="PRAXIS closed-loop overview: a generative protein language model proposes variants that an autonomous robotic laboratory constructs and characterizes, feeding measurements back to guide the next round of design." width="720">
+</p>
 
 ## Repository layout
 
