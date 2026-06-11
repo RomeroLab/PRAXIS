@@ -67,8 +67,9 @@ runs simulated rounds of experimental design under controlled conditions.
 
 The agent is challenged to optimize fitness across four datasets spanning diverse structures,
 functions, and degrees of landscape epistasis — **Pab1, GB1, Ube4b, and avGFP** (`pab1`, `gb1`,
-`ube4`, `gfp`). Each search is **initialized with 10 random sequences** and run for **20 rounds of
-10 acquisitions each**, comparing **5 search strategies**:
+`ube4`, `gfp`). Each search starts from a **10-sequence random seed** (round 1) and then runs
+**19 acquisition rounds of 10 sequences each** (190 acquired; 200 measured in total), comparing
+**5 search strategies**:
 
 | method (code) | strategy |
 |---|---|

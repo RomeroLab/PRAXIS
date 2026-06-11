@@ -62,8 +62,8 @@ bash setup.sh                                       # download ESM2 + Tranceptio
 bash insilico_analysis/run_full_benchmark.sh 0      # 4 datasets × 5 search strategies × 5 seeds
 ```
 
-Each search is initialized with 10 random sequences and run over 20 rounds of 10 acquisitions,
-comparing ProteinNPT + UCB against simpler baselines. See
+Each search starts from a 10-sequence random seed (round 1) and runs 19 acquisition rounds of
+10 sequences each (200 measured in total), comparing ProteinNPT + UCB against simpler baselines. See
 [`agent/README.md`](agent/README.md#in-silico-benchmarks).
 
 ### 2. The agent (closed-loop design)
