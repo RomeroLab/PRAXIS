@@ -1,0 +1,6 @@
+# Benchmark oracle datasets — restored by data/download_data.sh into agent/insilico_analysis/
+# format: <relative_path_in_repo>  <bytes>
+agent/insilico_analysis/dataset_oracle/gb1/gb1_SeqFxnDataset.pkl  46486514
+agent/insilico_analysis/dataset_oracle/gfp/gfp_SeqFxnDataset.pkl  15182056
+agent/insilico_analysis/dataset_oracle/pab1/pab1_SeqFxnDataset.pkl  4316744
+agent/insilico_analysis/dataset_oracle/ube4/ube4_SeqFxnDataset.pkl  13343506

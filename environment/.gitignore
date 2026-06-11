@@ -1,0 +1,19 @@
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# Data and inventory files
+data/
+inventories/
+worklists/
+output/
+plate_layout.json
+
+# Real config with secrets (keep only the .example template)
+configs/lab_config.yml
+lab_config.yml

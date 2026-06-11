@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "PRAXIS: a self-driving platform for protein engineering"
+# TODO: confirm author list and ORCIDs before publishing
+authors:
+  - family-names: Brooks
+    given-names: Coban
+license: MIT
+repository-code: "https://github.com/<ORG>/PRAXIS"
+# TODO: add the paper DOI and the data-archive (Zenodo) DOI once minted
+preferred-citation:
+  type: article
+  title: "<TODO: paper title>"
+  authors:
+    - family-names: Brooks
+      given-names: Coban
+  year: 2026
