@@ -206,7 +206,7 @@ def run_frontier(
     value_col: str = "fitness",
     noise_std: float = 0.0,
     replicates: int = 1,
-    initial_seed_size: int = 9,
+    initial_seed_size: int = 10,
 ):
     assert protein in VALID_PROTEINS, f"Unknown protein: {protein}. Must be one of {VALID_PROTEINS}"
 
@@ -281,8 +281,8 @@ def run_frontier(
         oracle._map[wt] = float(wt_fitness_val)
     frontier = Frontier(dataset_csv=data_csv, seq_col="sequence", value_col=value_col, restrict_length=len(wt), wt_sequence=wt)
 
-    # Build initial seed: sample (initial_seed_size + 1) random sequences from the dataset
-    seed_candidates = build_initial_seed(frontier, initial_seed_size + 1)
+    # Build initial seed: sample initial_seed_size random sequences from the dataset
+    seed_candidates = build_initial_seed(frontier, initial_seed_size)
     print(f"Seeding with {len(seed_candidates)} random dataset sequences")
     seed_df = pd.DataFrame({
         'sequence': seed_candidates,
@@ -615,7 +615,7 @@ if __name__ == "__main__":
     parser.add_argument('--value_col', type=str, default='functional_score')
     parser.add_argument('--noise_std', type=float, default=0.0)
     parser.add_argument('--replicates', type=int, default=1)
-    parser.add_argument('--initial_seed_size', type=int, default=9)
+    parser.add_argument('--initial_seed_size', type=int, default=10)
     parser.add_argument('--output_csv', type=str, default=None)
     parser.add_argument('--wt_fitness', type=float, default=None)
     parser.add_argument('--proposal_mode', type=str, default=None, help="'frontier_neighbors' or 'conditional_sampling'")

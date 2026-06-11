@@ -99,7 +99,7 @@ for PROTEIN in "${PROTEINS[@]}"; do
             fi
 
             bash insilico_analysis/dataset_oracle/run_frontier.sh \
-                "$PROTEIN" "$DATA_FILE" "$VALCOL" 9 "$WT_FIT" "" "" "$GPU_INDEX" "$SEED" "$METHOD"
+                "$PROTEIN" "$DATA_FILE" "$VALCOL" 10 "$WT_FIT" "" "" "$GPU_INDEX" "$SEED" "$METHOD"
 
             echo "Completed: ${PROTEIN} / ${METHOD} / seed=${SEED}"
             echo ""

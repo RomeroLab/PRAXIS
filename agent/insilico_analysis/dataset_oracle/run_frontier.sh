@@ -20,7 +20,7 @@ source ./insilico_analysis/dataset_oracle/${PROTEIN}/config_${PROTEIN}.sh
 
 DATA_PATH=${2:-}
 VALUE_COL=${3:-functional_score}
-INITIAL_SEED_SIZE=${4:-9}
+INITIAL_SEED_SIZE=${4:-10}
 WT_FITNESS=${5:-}
 # Optional: proposal mode (e.g., poisson_neighbors, poisson_sampled_mutants, poisson_exact_n_enumerate)
 PROPOSAL_MODE=${6:-}
@@ -221,7 +221,7 @@ if [ -n "${MODE}" ] && [ "${MODE}" != "full_pipeline" ]; then
 fi
 
 # Run the unified frontier simulation.
-# The simulator seeds the initial labelled set with (INITIAL_SEED_SIZE + 1) = 10 random
+# The simulator seeds the initial labelled set with INITIAL_SEED_SIZE = 10 random
 # sequences drawn from the DMS dataset.
 OUT_CSV="$data_location/results/${PROTEIN}_frontier_${run_id}_${run_mode}_seed${SEED}${MODE_SUFFIX}.csv"
 echo "Running ${PROTEIN} on GPU index ${GPU_INDEX}"
