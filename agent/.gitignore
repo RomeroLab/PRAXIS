@@ -3,9 +3,9 @@ local_data
 __pycache__/
 *.pyc
 
-# Model repositories
-ESM/
-Tranception/
+# Model repositories (dirs or symlinks to the weights)
+ESM
+Tranception
 
 # Data files (large)
 data/Duke_final_database.db
