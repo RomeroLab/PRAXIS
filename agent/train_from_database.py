@@ -295,7 +295,7 @@ def parse_arguments():
     parser.add_argument('--table_name', type=str, help='Name of table to be shared across all agents')
     parser.add_argument('--selection_method', default="top_clusters", type=str, help='Method to select top sequences to aquire (used with conditional sampling only)')
     parser.add_argument('--ESM_location', type=str, help='Path to ESM2 (650M) location -- used to get sequence embeddings used in clustering of acquisition function')
-    parser.add_argument('--target_to_index_mapping', type=str, help='Path to config file mapping target name to ECL target index')
+    parser.add_argument('--target_to_index_mapping', type=str, help='Path to config file mapping target name to lab target index')
     #Common to all agents - Bayesian optimization params
     parser.add_argument('--sampling_mode', default="conditional_sampling", type=str, help='Approach to select sequences to score at each round [conditional_sampling|all_combinations|sample_at_random]')
     parser.add_argument('--num_acquisitions', type=int, help='Total number of data acquisitions (ie., number of Bayesian Optimization rounds)')

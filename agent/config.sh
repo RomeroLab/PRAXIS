@@ -43,8 +43,8 @@ export sampling_mode="conditional_sampling" #"all_combinations"
 export acquisition_batch=2
 # ESM location (Path to ESM2 (650M) location -- used to get sequence embeddings used in clustering of acquisition function)
 export ESM_location=$data_location"/ESM/ESM2/esm2_t33_650M_UR50D.pt"
-# Path to config file that provides a mapping between target name and ECL data acquisition index
-export target_to_index_mapping="./configs/targets/target_name_to_ECL_index.json"
+# Path to config file that provides a mapping between target name and lab data acquisition index
+export target_to_index_mapping="./configs/targets/target_name_to_lab_index.json"
 
 # Resume settings (leave empty / 0 for normal start)
 export seed_sequences="data/plate_data/phenotype.json"      # Path to CSV with pre-measured sequences to seed the DB

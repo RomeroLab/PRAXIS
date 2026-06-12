@@ -61,7 +61,7 @@ class Oracle:
         return float(v) if v is not None else None
 
 
-def insilico_cloud_lab_acquisition(segmented_sequences: List[List[str]], oracle: Oracle):
+def insilico_lab_acquisition(segmented_sequences: List[List[str]], oracle: Oracle):
     sequences = [''.join(segs) for segs in segmented_sequences]
     phenos = oracle.query(sequences)
     invalid = [s for s in sequences if s not in phenos]
@@ -69,8 +69,8 @@ def insilico_cloud_lab_acquisition(segmented_sequences: List[List[str]], oracle:
     return phenotype_data, invalid
 
 
-def insilico_get_dict_from_cloud_lab_acquisition(segmented_sequences: List[List[str]], assayed_target_name: List[str], target_to_index_mapping: Dict[str, int], oracle: Oracle):
-    phenotype_data, invalid_sequences = insilico_cloud_lab_acquisition(segmented_sequences, oracle)
+def insilico_get_dict_from_lab_acquisition(segmented_sequences: List[List[str]], assayed_target_name: List[str], target_to_index_mapping: Dict[str, int], oracle: Oracle):
+    phenotype_data, invalid_sequences = insilico_lab_acquisition(segmented_sequences, oracle)
     out = {}
     for segs in segmented_sequences:
         seq = ''.join(segs)

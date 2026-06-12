@@ -445,7 +445,7 @@ def combine_segments_and_save(segmented_sequences, output_file):
     
     print(f"Wrote {len(segmented_sequences)} sequences to {output_file}")
 
-def cloud_lab_acquisition(segmented_sequences):
+def lab_acquisition(segmented_sequences):
     """
     Write combined sequences to file, transfer to lab server, and monitor for results.
     """
@@ -469,23 +469,23 @@ def cloud_lab_acquisition(segmented_sequences):
         
     return phenotype_data, invalid_sequences
 
-def get_dict_from_cloud_lab_acquisition(segmented_sequences, assayed_target_name, target_to_index_mapping):
+def get_dict_from_lab_acquisition(segmented_sequences, assayed_target_name, target_to_index_mapping):
     """
     Get measurements for valid sequences and track invalid ones
     """
-    phenotype_data, invalid_sequences = cloud_lab_acquisition(segmented_sequences)
+    phenotype_data, invalid_sequences = lab_acquisition(segmented_sequences)
     
-    cloud_lab_dict = {}
+    lab_dict = {}
     for segmented_sequence in segmented_sequences:
         seq = ''.join(segmented_sequence)
         # Skip invalid sequences
         if seq in invalid_sequences:
             continue
             
-        cloud_lab_dict[seq] = {}
+        lab_dict[seq] = {}
         for target in assayed_target_name:
-            cloud_lab_dict[seq][target] = phenotype_data[seq][target_to_index_mapping[target]]
-    return cloud_lab_dict, invalid_sequences
+            lab_dict[seq][target] = phenotype_data[seq][target_to_index_mapping[target]]
+    return lab_dict, invalid_sequences
 
 def get_zero_shot_fitness_predictions(sequences, zero_shot_fitness_location, zero_shot_prediction_name="ESM2_650M"):
     """
@@ -535,7 +535,7 @@ def acquire_sequences(sequences_df, target_names, target_to_index_mapping, thres
 
     sequences_to_acquire_df = sequences_df.copy()
     
-    cloud_lab_dict, invalid_sequences = get_dict_from_cloud_lab_acquisition(
+    lab_dict, invalid_sequences = get_dict_from_lab_acquisition(
         sequences_to_acquire_df['segmented_sequence'], 
         acquired_target_name, 
         target_to_index_mapping
@@ -547,8 +547,8 @@ def acquire_sequences(sequences_df, target_names, target_to_index_mapping, thres
             
         max_value = 0
         for target in acquired_target_name:
-            if seq in cloud_lab_dict and target in cloud_lab_dict[seq]:
-                target_value = cloud_lab_dict[seq][target]
+            if seq in lab_dict and target in lab_dict[seq]:
+                target_value = lab_dict[seq][target]
                 acquired_phenotypes[target][seq] = target_value
                 if target_value > max_value:
                     max_value = target_value
@@ -970,7 +970,7 @@ def parse_arguments():
     parser.add_argument('--table_name', type=str, help='Name of table to be shared across all agents')
     parser.add_argument('--selection_method', default="top_clusters", type=str, help='Method to select top sequences to aquire (used with conditional sampling only)')
     parser.add_argument('--ESM_location', type=str, help='Path to ESM2 (650M) location -- used to get sequence embeddings used in clustering of acquisition function')
-    parser.add_argument('--target_to_index_mapping', type=str, help='Path to config file mapping target name to ECL target index')
+    parser.add_argument('--target_to_index_mapping', type=str, help='Path to config file mapping target name to lab target index')
     #Common to all agents - Bayesian optimization params
     parser.add_argument('--sampling_mode', default="conditional_sampling", type=str, help='Approach to select sequences to score at each round [conditional_sampling|all_combinations|sample_at_random]')
     parser.add_argument('--num_acquisitions', type=int, help='Total number of data acquisitions (ie., number of Bayesian Optimization rounds)')
