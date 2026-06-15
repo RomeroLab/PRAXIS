@@ -23,9 +23,21 @@ from insilico_analysis.dataset_oracle.synevo import Oracle, Frontier
 VALID_PROTEINS = ('gfp', 'gb1', 'pab1', 'ube4')
 
 
-def build_initial_seed(frontier, seed_size: int) -> List[str]:
-    """Sample seed_size random sequences from the dataset as the initial labelled set."""
+def build_initial_seed(frontier, seed_size: int, max_attempts: int = 20) -> List[str]:
+    """Sample seed_size random sequences from the dataset as the initial labelled set.
+
+    If the sampled seed has no reachable dataset neighbors (which stops the loop
+    immediately at an empty frontier), re-sample another random seed_size, up to
+    max_attempts.
+    """
     chosen = random.sample(frontier.all, seed_size)
+    for attempt in range(1, max_attempts + 1):
+        if frontier.frontier(set(chosen)):
+            break
+        print(f"Initial seed (attempt {attempt}) has no reachable neighbors; re-sampling {seed_size}.")
+        chosen = random.sample(frontier.all, seed_size)
+    else:
+        print(f"WARNING: no seed with reachable neighbors after {max_attempts} attempts; using last sample.")
     return [s + "*" for s in chosen]
 
 

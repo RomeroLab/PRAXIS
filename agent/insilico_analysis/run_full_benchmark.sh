@@ -3,13 +3,14 @@
 # Master benchmark runner: loops over proteins x methods x seeds (dataset_oracle only).
 #
 # Usage:
-#   bash insilico_analysis/run_full_benchmark.sh [GPU_INDEX] [PROTEIN] [METHOD]
+#   bash insilico_analysis/run_full_benchmark.sh [GPU_INDEX] [PROTEIN] [METHOD] [SEED]
 #
 # Examples:
-#   bash insilico_analysis/run_full_benchmark.sh 0              # all proteins, all methods on GPU 0
-#   bash insilico_analysis/run_full_benchmark.sh 0 gfp          # GFP only, all methods on GPU 0
-#   bash insilico_analysis/run_full_benchmark.sh 1 gb1          # GB1 only on GPU 1
-#   bash insilico_analysis/run_full_benchmark.sh 2 pab1 greedy  # PAB1 greedy only on GPU 2
+#   bash insilico_analysis/run_full_benchmark.sh 0                  # all proteins, all methods on GPU 0
+#   bash insilico_analysis/run_full_benchmark.sh 0 gfp             # GFP only, all methods on GPU 0
+#   bash insilico_analysis/run_full_benchmark.sh 1 gb1             # GB1 only on GPU 1
+#   bash insilico_analysis/run_full_benchmark.sh 2 pab1 greedy     # PAB1 greedy only on GPU 2
+#   bash insilico_analysis/run_full_benchmark.sh 0 pab1 greedy 2   # PAB1 greedy seed 2 only (one run; used by Slurm array)
 #
 # Parallel across 4 GPUs (one protein per GPU):
 #   bash insilico_analysis/run_full_benchmark.sh 0 gfp  &
@@ -28,9 +29,14 @@ set -euo pipefail
 GPU_INDEX=${1:-0}
 FILTER_PROTEIN=${2:-}
 FILTER_METHOD=${3:-}
+FILTER_SEED=${4:-}
 NUM_SEEDS=5
 SEEDS=(0 1 2 3 4)
 ALL_METHODS=(full_pipeline greedy onehot_mlp onehot_mlp_greedy random)
+
+if [ -n "$FILTER_SEED" ]; then
+    SEEDS=("$FILTER_SEED")
+fi
 
 if [ -n "$FILTER_METHOD" ]; then
     METHODS=("$FILTER_METHOD")

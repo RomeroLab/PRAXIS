@@ -24,6 +24,10 @@ outputs/
 wandb/
 embedding_progress.txt
 
+# Slurm batch wrapper + logs (cluster-specific, not part of the portable pipeline)
+insilico_analysis/run_benchmark_slurm.sh
+insilico_analysis/slurm_logs/
+
 # Benchmark runtime artifacts (keep the code, ignore generated data/results/weights)
 insilico_analysis/**/results/
 insilico_analysis/**/data/
