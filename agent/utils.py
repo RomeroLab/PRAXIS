@@ -17,6 +17,8 @@ from torch.utils.data.sampler import SequentialSampler
 from transformers import DataCollatorForLanguageModeling
 from esm.pretrained import load_model_and_alphabet
 
+# Re-export ConvBertLayer onto transformers so proteinnpt imports (see _compat_proteinnpt).
+import _compat_proteinnpt  # noqa: F401
 from proteinnpt.utils.data_utils import preprocess_training_targets, collate_fn_protein_npt, slice_sequences
 from proteinnpt.proteinnpt.data_processing import process_batch
 from proteinnpt.utils.tranception.utils.scoring_utils import get_sequence_slices

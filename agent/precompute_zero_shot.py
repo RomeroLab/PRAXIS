@@ -5,6 +5,8 @@ import pandas as pd
 
 import torch
 
+# Re-export ConvBertLayer onto transformers so proteinnpt imports (see _compat_proteinnpt).
+import _compat_proteinnpt  # noqa: F401
 from proteinnpt.utils.tranception.model_pytorch import get_tranception_tokenizer,TranceptionLMHeadModel
 from proteinnpt.utils.tranception.config import TranceptionConfig
 

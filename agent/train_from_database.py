@@ -10,6 +10,8 @@ import argparse
 import itertools
 from datasets import Dataset
 from datetime import datetime
+# Re-export ConvBertLayer onto transformers so proteinnpt imports (see _compat_proteinnpt).
+import _compat_proteinnpt  # noqa: F401
 from proteinnpt.utils.model_utils import Trainer
 from proteinnpt.utils.data_utils import standardize
 from proteinnpt.utils.esm.pretrained import load_model_and_alphabet

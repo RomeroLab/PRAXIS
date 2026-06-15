@@ -24,6 +24,8 @@ import requests
 
 from utils import setup_config_and_paths, connect_db, create_table, add_sequence_data, get_train_database, score_mutated_sequences, convert_fragment_df_to_dict, data_cleanup_for_model_input, add_back_embedding, get_segmented_sequence, generate_mutation_string, sample_chunk, add_end_token_to_generated_sequence, fetch_previously_acquired_sequences, get_embeddings_ESM, process_ESM_batch, get_ESM_dataloader
 
+# Re-export ConvBertLayer onto transformers so proteinnpt imports (see _compat_proteinnpt).
+import _compat_proteinnpt  # noqa: F401
 from proteinnpt.proteinnpt.model import ProteinNPTModel
 from proteinnpt.utils.esm.data import Alphabet
 from proteinnpt.utils.esm.pretrained import load_model_and_alphabet
