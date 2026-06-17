@@ -106,12 +106,17 @@ def plot_fitness_trajectory(output_dir, proteins=None, dataset_dir=None):
     """
     if proteins is None:
         proteins = PROTEINS
+    if not dataset_dir or not os.path.isdir(dataset_dir):
+        raise FileNotFoundError(
+            f"dataset_dir not found: {dataset_dir!r} (cwd: {os.getcwd()}). "
+            "Run from the repo root, or pass an explicit --dataset_dir.")
     n = len(proteins)
     sq = 7
     fig, axes = plt.subplots(2, n, figsize=(sq * n, sq * 2),
                              sharex=False, sharey=False, squeeze=False)
 
     scatter_method_keys = ['full_pipeline', 'greedy', 'onehot_mlp', 'onehot_mlp_greedy', 'random']
+    data_found = False  # set True once any method yields plottable data
 
     for idx, protein in enumerate(proteins):
         ax_line = axes[0][idx]
@@ -128,6 +133,7 @@ def plot_fitness_trajectory(output_dir, proteins=None, dataset_dir=None):
             df = _load_round_best(protein, method, dataset_dir) if dataset_dir else None
             if df is None:
                 continue
+            data_found = True
             rounds = df['round']
             y = df['mean_best_fitness']
             ax_line.plot(rounds, y,
@@ -219,6 +225,13 @@ def plot_fitness_trajectory(output_dir, proteins=None, dataset_dir=None):
     if handles:
         fig.legend(handles, labels, loc='lower center', ncol=2, fontsize=11,
                    bbox_to_anchor=(0.5, -0.01))
+
+    if not data_found:
+        plt.close(fig)
+        raise RuntimeError(
+            f"No round-log data found under {dataset_dir!r} for proteins {proteins} "
+            "(expected {protein}/results/*_seed{N}_{method}_round_log.csv). "
+            "Refusing to write a blank figure.")
 
     plt.tight_layout(rect=[0, 0.04, 1, 1])
     out_path = os.path.join(output_dir, 'fitness_trajectory.pdf')
