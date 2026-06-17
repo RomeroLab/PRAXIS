@@ -82,7 +82,7 @@ def _load_round_best(protein, method, dataset_dir):
         filled.append(merged)
     combined = pd.concat(filled)
     agg = combined.groupby('round')['best_fitness'].agg(['median']).reset_index()
-    agg.columns = ['round', 'mean_best_fitness']
+    agg.columns = ['round', 'median_best_fitness']
     return agg
 
 
@@ -135,7 +135,7 @@ def plot_fitness_trajectory(output_dir, proteins=None, dataset_dir=None):
                 continue
             data_found = True
             rounds = df['round']
-            y = df['mean_best_fitness']
+            y = df['median_best_fitness']
             ax_line.plot(rounds, y,
                          style['ls'], color=style['color'], linewidth=style['linewidth'],
                          alpha=style['alpha'], label=style['label'])
@@ -144,7 +144,7 @@ def plot_fitness_trajectory(output_dir, proteins=None, dataset_dir=None):
         for method in METHODS:
             df = _load_round_best(protein, method, dataset_dir) if dataset_dir else None
             if df is not None:
-                all_line_vals.extend(df['mean_best_fitness'].dropna().tolist())
+                all_line_vals.extend(df['median_best_fitness'].dropna().tolist())
         if all_line_vals:
             y_bottom = min(all_line_vals)
             y_top = max(all_line_vals)
