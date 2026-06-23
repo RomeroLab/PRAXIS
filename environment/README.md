@@ -70,3 +70,9 @@ by `PRAXIS_GPU_HOST`, `PRAXIS_GPU_USER`, `PRAXIS_GPU_REMOTE_PATH`, `PRAXIS_SSH_K
 `PRAXIS_GPU_PORT` environment variables.
 
 `examples/` contains a sample plate-reader export and assay output for reference.
+
+## Hardware
+
+[`hardware/auto_fridge/`](hardware/auto_fridge) contains the firmware, wiring schematic, and
+3D-printable parts for the actuated refrigerator door that gives the robotic workflow access to
+cold storage.
