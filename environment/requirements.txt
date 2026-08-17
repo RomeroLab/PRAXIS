@@ -1,0 +1,9 @@
+watchdog
+paramiko
+pyyaml
+flask
+pandas
+numpy
+scipy
+opencv-python
+openpyxl

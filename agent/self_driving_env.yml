@@ -1,0 +1,30 @@
+name: self_driving_env
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - anaconda
+  - defaults
+  - pypi
+dependencies:
+  - python=3.10.14
+  - numpy
+  - pandas=2.2.1
+  - scipy=1.13.0
+  - scikit-learn=1.4.2
+  - tqdm
+  - pip
+  - biopython
+  - h5py
+  - paramiko
+  - numba
+  - pytorch=2.3.1
+  - pytorch-cuda=12.1
+  - pip:
+      - wandb
+      - transformers
+      - tokenizers
+      - datasets
+      - proteinnpt==1.5.1
+      - fair-esm==2.0.0
+      - psycopg2-binary

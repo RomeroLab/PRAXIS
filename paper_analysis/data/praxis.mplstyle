@@ -1,0 +1,71 @@
+# PRAXIS matplotlib style
+# Usage:
+#   import matplotlib.pyplot as plt
+#   plt.style.use('paper_analysis/data/praxis.mplstyle')
+
+# --- Fonts: Arial everywhere ---
+font.family:        sans-serif
+font.sans-serif:    Arial, Helvetica, DejaVu Sans
+font.size:          10
+axes.titlesize:     11
+axes.labelsize:     10
+xtick.labelsize:    9
+ytick.labelsize:    9
+legend.fontsize:    9
+figure.titlesize:   12
+mathtext.fontset:   custom
+mathtext.rm:        Arial
+mathtext.it:        Arial:italic
+mathtext.bf:        Arial:bold
+
+# --- Box: all four spines visible ---
+axes.spines.top:    True
+axes.spines.right:  True
+axes.spines.bottom: True
+axes.spines.left:   True
+axes.linewidth:     1.0
+axes.edgecolor:     black
+
+# --- Ticks: clear, outward, on bottom + left ---
+xtick.direction:    out
+ytick.direction:    out
+xtick.major.size:   4
+ytick.major.size:   4
+xtick.minor.size:   2.5
+ytick.minor.size:   2.5
+xtick.major.width:  1.0
+ytick.major.width:  1.0
+xtick.minor.width:  0.8
+ytick.minor.width:  0.8
+xtick.major.pad:    3.5
+ytick.major.pad:    3.5
+xtick.color:        black
+ytick.color:        black
+xtick.top:          False
+ytick.right:        False
+
+# --- Color cycle: glucose, xylose, mannose, accent, light gray ---
+axes.prop_cycle: cycler('color', ['5a63a6', 'ff4470', 'ffa600', '00a285', 'e6e6e6'])
+
+# --- Grid off by default; if turned on, use light gray ---
+axes.grid:          False
+grid.color:         e6e6e6
+grid.linewidth:     0.6
+grid.linestyle:     -
+
+# --- Legend ---
+legend.frameon:         False
+legend.borderaxespad:   0.5
+
+# --- Lines / markers ---
+lines.linewidth:        1.5
+lines.markersize:       5
+lines.markeredgewidth:  0.8
+
+# --- Figure / save ---
+figure.dpi:         120
+savefig.dpi:        300
+figure.facecolor:   white
+axes.facecolor:     white
+savefig.facecolor:  white
+savefig.bbox:       tight

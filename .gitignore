@@ -1,0 +1,36 @@
+# OS / editor
+.DS_Store
+*.swp
+*~
+
+# Local scratch / backups / job logs
+*.bak
+*.orig
+*.tmp
+*.err
+*.out
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Large model-weight artifacts (fetched by agent/setup.sh, not committed)
+*.h5
+*.pt
+
+# Regenerated figure outputs
+paper_analysis/exports/*
+!paper_analysis/exports/kcat_km.csv
+!paper_analysis/exports/kinetic_parameters.xlsx
+!paper_analysis/exports/supp_per_residue_attribution.csv
+!paper_analysis/exports/supp_per_residue_attribution.xlsx
+
+# Excel lock files
+~$*
+
+# Local credentials / env
+.env

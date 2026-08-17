@@ -1,0 +1,30 @@
+# PRAXIS environment (lab automation) configuration — EXAMPLE.
+# Copy to configs/lab_config.yml and fill in your values. The real file is gitignored.
+# SFTP and notification secrets can also be supplied via environment variables
+# (PRAXIS_GPU_HOST, PRAXIS_GPU_USER, PRAXIS_GPU_REMOTE_PATH, PRAXIS_SSH_KEY, PRAXIS_GPU_PORT).
+
+# Local filesystem layout the controller watches and writes to.
+paths:
+  data_dir: "data"
+  worklists_dir: "worklists"
+  inventory_dir: "inventories"
+
+# Filenames within data_dir.
+files:
+  sequence_query: "sequence_query.txt"      # input sequences to assay
+  plate_data: "raw_plate_data.csv"          # plate-reader output (input)
+  processed_data: "phenotype.json"          # processed result (transferred to the agent)
+
+# Transfer of phenotype.json back to the GPU server running the agent.
+sftp:
+  hostname: "your.gpu.server"
+  username: "user"
+  remote_path: "/path/to/agent/data/plate_data"
+  key_filename: "~/.ssh/id_rsa"
+  port: 22
+
+# Push notifications via Pushover (https://pushover.net). Set enabled: false to disable.
+notifications:
+  enabled: false
+  pushover_api_token: "YOUR_PUSHOVER_API_TOKEN"
+  pushover_user_key: "YOUR_PUSHOVER_USER_KEY"

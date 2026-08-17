@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the associated paper."
+title: "PRAXIS: Learning protein function through autonomous experimental interaction"
+authors:
+  - family-names: Brooks
+    given-names: Coban
+  - family-names: Notin
+    given-names: Pascal
+  - family-names: Romero
+    given-names: Philip A.
+license: Apache-2.0
+repository-code: "https://github.com/RomeroLab/PRAXIS"
+preferred-citation:
+  type: article
+  title: "Learning protein function through autonomous experimental interaction"
+  journal: "bioRxiv"
+  doi: "10.64898/2026.08.14.744985"
+  url: "https://www.biorxiv.org/content/10.64898/2026.08.14.744985v1"
+  authors:
+    - family-names: Brooks
+      given-names: Coban
+    - family-names: Notin
+      given-names: Pascal
+    - family-names: Romero
+      given-names: Philip A.
+  year: 2026

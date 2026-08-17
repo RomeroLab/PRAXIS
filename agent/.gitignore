@@ -1,0 +1,48 @@
+slurm
+local_data
+__pycache__/
+*.pyc
+
+# Model repositories (dirs or symlinks to the weights)
+ESM
+Tranception
+
+# Data files (large)
+data/Duke_final_database.db
+data/all_sequences/
+data/tablespace/
+data/zero_shot_fitness_predictions/
+
+# Model checkpoints & predictions
+model_checkpoints/
+model_checkpoints_arch/
+model_predictions/
+model_predictions_arch/
+
+# Outputs & logging
+outputs/
+wandb/
+embedding_progress.txt
+
+# Slurm batch wrapper + logs (cluster-specific, not part of the portable pipeline)
+insilico_analysis/run_benchmark_slurm.sh
+insilico_analysis/run_epistasis.sh
+insilico_analysis/slurm_logs/
+
+# Benchmark runtime artifacts (keep the code, ignore generated data/results/weights)
+insilico_analysis/**/results/
+insilico_analysis/**/data/
+insilico_analysis/**/model_checkpoints/
+insilico_analysis/**/model_predictions/
+insilico_analysis/**/*_args.json
+insilico_analysis/aggregated*/
+insilico_analysis/figures*/
+
+# Generated CSVs in root (analysis copies)
+/sql_*.csv
+
+# Local analysis scratch outputs (not part of the published pipeline)
+insilico_analysis/epistasis_output*.txt
+
+# Accidental files
+{

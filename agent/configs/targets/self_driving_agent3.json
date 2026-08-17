@@ -1,0 +1,30 @@
+{
+    "a3": {
+        "type": "continuous",
+        "dim": 1,
+        "var_name": "a3",
+        "in_NPT_loss": true,
+        "main_target": true
+    },
+    "a1": {
+        "type": "continuous",
+        "dim": 1,
+        "var_name": "a1",
+        "in_NPT_loss": true,
+        "main_target": false
+    },
+    "a2": {
+        "type": "continuous",
+        "dim": 1,
+        "var_name": "a2",
+        "in_NPT_loss": true,
+        "main_target": false
+    },
+    "f": {
+        "type": "categorical",
+        "dim": 2,
+        "var_name": "f",
+        "in_NPT_loss": true,
+        "main_target": false
+    }
+}
